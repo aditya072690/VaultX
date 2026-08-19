@@ -15,21 +15,39 @@ import vaultRoutes from './routes/vault.routes';
 
 const app = express();
 
+// ─── Trust Reverse Proxy (Railway / Render / Cloudflare / Nginx) ─
+app.set('trust proxy', 1);
+
 // ─── Security Middleware ────────────────────────────────────────
 app.use(helmet());
+
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+].filter(Boolean);
+
 app.use(cors({
-  origin: env.FRONTEND_URL,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-vault-unlock-token', 'x-vault-token'],
 }));
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 app.use('/api/', limiter);
