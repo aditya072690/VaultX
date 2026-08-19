@@ -1,6 +1,9 @@
 # Multi-stage production build for VaultX Express API
 FROM node:20-alpine AS builder
 
+# Install OpenSSL and build dependencies for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
 WORKDIR /app
 
 # Install dependencies
@@ -16,6 +19,9 @@ RUN npm run build
 
 # Production runtime stage
 FROM node:20-alpine AS runner
+
+# Install OpenSSL runtime libraries for Prisma query engine on Alpine
+RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
 
