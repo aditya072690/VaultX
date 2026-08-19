@@ -1,4 +1,4 @@
-import api from './api';
+import api, { API_URL } from './api';
 import {
   FileItem,
   Folder,
@@ -80,13 +80,13 @@ export const fileService = {
 
   getDownloadUrl(id: string): string {
     const token = typeof window !== 'undefined' ? localStorage.getItem('vaultx_token') : null;
-    const baseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/files/${id}/download`;
+    const baseUrl = `${API_URL}/files/${id}/download`;
     return token ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl;
   },
 
   getPreviewUrl(id: string): string {
     const token = typeof window !== 'undefined' ? localStorage.getItem('vaultx_token') : null;
-    const baseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/files/${id}/preview`;
+    const baseUrl = `${API_URL}/files/${id}/preview`;
     return token ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl;
   },
 
