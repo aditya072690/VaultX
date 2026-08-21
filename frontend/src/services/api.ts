@@ -3,6 +3,11 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 export const getBaseApiUrl = (): string => {
   let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
   url = url.trim().replace(/\/+$/, ''); // Remove trailing slashes
+  if (!/^https?:\/\//i.test(url)) {
+    url = url.includes('localhost') || url.includes('127.0.0.1')
+      ? `http://${url}`
+      : `https://${url}`;
+  }
   if (!url.endsWith('/api')) {
     url = `${url}/api`;
   }

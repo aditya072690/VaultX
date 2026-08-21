@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import { formatFileSize, getFileIcon, getFileColor } from '@/utils/helpers';
+import { API_URL } from '@/services/api';
 
 interface PublicFileData {
   requiresPassword: boolean;
@@ -28,7 +29,7 @@ export default function PublicDownloadPage({ params }: { params: Promise<{ token
     setError('');
     try {
       const params = pwd ? `?password=${encodeURIComponent(pwd)}` : '';
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/${token}${params}`);
+      const res = await fetch(`${API_URL}/public/${token}${params}`);
       const json = await res.json();
 
       if (!res.ok) {
@@ -56,7 +57,7 @@ export default function PublicDownloadPage({ params }: { params: Promise<{ token
     setDownloading(true);
     try {
       const params = password ? `?password=${encodeURIComponent(password)}` : '';
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/public/${token}/download${params}`);
+      const res = await fetch(`${API_URL}/public/${token}/download${params}`);
       const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);

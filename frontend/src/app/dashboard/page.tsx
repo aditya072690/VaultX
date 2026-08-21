@@ -37,9 +37,9 @@ export default function DashboardPage() {
   const handleDownload = async (fileId: string) => {
     try {
       const token = localStorage.getItem('vaultx_token');
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/files/${fileId}/download`;
+      const url = fileService.getDownloadUrl(fileId);
       const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const blob = await response.blob();
       const file = files.find((f) => f.id === fileId);
