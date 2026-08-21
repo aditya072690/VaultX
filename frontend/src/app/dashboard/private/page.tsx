@@ -31,7 +31,50 @@ export default function PrivatePage() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [actionMenuFileId, setActionMenuFileId] = useState<string | null>(null);
+  const [actionMenu, setActionMenu] = useState<{
+    file: FileItem;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleOpenActionMenu = (e: React.MouseEvent, file: FileItem) => {
+    e.stopPropagation();
+    if (actionMenu?.file.id === file.id) {
+      setActionMenu(null);
+      return;
+    }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuWidth = 208; // 13rem = 208px
+    const menuHeight = 96;
+
+    let x = rect.right - menuWidth;
+    let y = rect.bottom + 6;
+
+    // Viewport horizontal boundary protection
+    if (x < 10) x = 10;
+    if (x + menuWidth > window.innerWidth - 10) {
+      x = window.innerWidth - menuWidth - 10;
+    }
+
+    // Viewport vertical boundary protection (flip up if close to bottom)
+    if (y + menuHeight > window.innerHeight - 10) {
+      y = Math.max(10, rect.top - menuHeight - 6);
+    }
+
+    setActionMenu({ file, x, y });
+  };
+
+  // Close floating action menu on window scroll/resize
+  useEffect(() => {
+    if (!actionMenu) return;
+    const handleClose = () => setActionMenu(null);
+    window.addEventListener('scroll', handleClose, true);
+    window.addEventListener('resize', handleClose);
+    return () => {
+      window.removeEventListener('scroll', handleClose, true);
+      window.removeEventListener('resize', handleClose);
+    };
+  }, [actionMenu]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -539,43 +582,17 @@ export default function PrivatePage() {
                           </button>
 
                           <button
-                            onClick={() =>
-                              setActionMenuFileId(actionMenuFileId === file.id ? null : file.id)
-                            }
-                            className="p-1.5 text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-lg transition-colors"
+                            onClick={(e) => handleOpenActionMenu(e, file)}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              actionMenu?.file.id === file.id
+                                ? 'text-[#0F172A] bg-[#F1F5F9]'
+                                : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
+                            }`}
+                            title="More Options"
                           >
                             <span className="material-symbols-outlined text-lg">more_vert</span>
                           </button>
                         </div>
-
-                        {/* Action Dropdown Menu */}
-                        {actionMenuFileId === file.id && (
-                          <div className="absolute right-5 top-12 z-30 w-52 bg-white border border-[#E2E8F0] rounded-xl shadow-xl py-1 text-left animate-scale-up">
-                            <button
-                              onClick={() => {
-                                handleRemoveFromVault(file);
-                                setActionMenuFileId(null);
-                              }}
-                              className="w-full flex items-center gap-2 px-4 py-2 text-xs text-[#0F172A] hover:bg-[#F8FAFC] transition-colors"
-                            >
-                              <span className="material-symbols-outlined text-base text-[#64748B]">
-                                lock_open
-                              </span>
-                              <span>Move to General Storage</span>
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                handleDeleteFile(file);
-                                setActionMenuFileId(null);
-                              }}
-                              className="w-full flex items-center gap-2 px-4 py-2 text-xs text-[#DC2626] hover:bg-red-50 transition-colors"
-                            >
-                              <span className="material-symbols-outlined text-base">delete</span>
-                              <span>Move to Trash</span>
-                            </button>
-                          </div>
-                        )}
                       </td>
                     </tr>
                   ))}
@@ -711,6 +728,45 @@ export default function PrivatePage() {
             <span>Upload Private Files</span>
           </button>
         </div>
+      )}
+
+      {/* Floating Action Dropdown Menu */}
+      {actionMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setActionMenu(null)}
+          />
+          <div
+            className="fixed z-50 w-52 bg-white border border-[#E2E8F0] rounded-xl shadow-xl py-1 text-left animate-scale-in"
+            style={{ left: actionMenu.x, top: actionMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                handleRemoveFromVault(actionMenu.file);
+                setActionMenu(null);
+              }}
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-[#0F172A] hover:bg-[#F8FAFC] transition-colors"
+            >
+              <span className="material-symbols-outlined text-base text-[#64748B]">
+                lock_open
+              </span>
+              <span>Move to General Storage</span>
+            </button>
+
+            <button
+              onClick={() => {
+                handleDeleteFile(actionMenu.file);
+                setActionMenu(null);
+              }}
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-[#DC2626] hover:bg-red-50 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">delete</span>
+              <span>Move to Trash</span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

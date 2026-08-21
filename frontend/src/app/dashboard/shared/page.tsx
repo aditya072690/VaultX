@@ -38,7 +38,50 @@ export default function SharedPage() {
   // Active Modals & Context Menus
   const [selectedShare, setSelectedShare] = useState<SharedFileItem | null>(null);
   const [previewFile, setPreviewFile] = useState<{ id: string; name: string; permission: 'view' | 'download' | 'upload' } | null>(null);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<{
+    share: SharedFileItem;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleOpenShareDropdown = (e: React.MouseEvent, share: SharedFileItem) => {
+    e.stopPropagation();
+    if (activeDropdown?.share.id === share.id) {
+      setActiveDropdown(null);
+      return;
+    }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuWidth = 192; // 12rem = 192px
+    const menuHeight = 96;
+
+    let x = rect.right - menuWidth;
+    let y = rect.bottom + 6;
+
+    // Viewport horizontal boundary protection
+    if (x < 10) x = 10;
+    if (x + menuWidth > window.innerWidth - 10) {
+      x = window.innerWidth - menuWidth - 10;
+    }
+
+    // Viewport vertical boundary protection (flip up if close to bottom)
+    if (y + menuHeight > window.innerHeight - 10) {
+      y = Math.max(10, rect.top - menuHeight - 6);
+    }
+
+    setActiveDropdown({ share, x, y });
+  };
+
+  // Close floating action menu on window scroll/resize
+  useEffect(() => {
+    if (!activeDropdown) return;
+    const handleClose = () => setActiveDropdown(null);
+    window.addEventListener('scroll', handleClose, true);
+    window.addEventListener('resize', handleClose);
+    return () => {
+      window.removeEventListener('scroll', handleClose, true);
+      window.removeEventListener('resize', handleClose);
+    };
+  }, [activeDropdown]);
 
   // Load Data
   const loadData = async () => {
@@ -521,42 +564,17 @@ export default function SharedPage() {
                                 </button>
 
                                 {/* More Menu Button */}
-                                <div className="relative">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setActiveDropdown(activeDropdown === share.id ? null : share.id);
-                                    }}
-                                    className="p-1.5 text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-lg transition-colors"
-                                  >
-                                    <span className="material-symbols-outlined text-lg">more_vert</span>
-                                  </button>
-
-                                  {activeDropdown === share.id && (
-                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-[#E2E8F0] py-1.5 z-20 text-left animate-scale-in">
-                                      <button
-                                        onClick={() => {
-                                          setSelectedShare(share);
-                                          setActiveDropdown(null);
-                                        }}
-                                        className="w-full px-3.5 py-2 text-xs text-[#0F172A] hover:bg-[#F8FAFC] flex items-center gap-2 transition-colors"
-                                      >
-                                        <span className="material-symbols-outlined text-base text-[#64748B]">info</span>
-                                        Sharing Details
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          handleDeleteShare(share.id, false);
-                                          setActiveDropdown(null);
-                                        }}
-                                        className="w-full px-3.5 py-2 text-xs text-[#DC2626] hover:bg-[#FEE2E2] flex items-center gap-2 transition-colors"
-                                      >
-                                        <span className="material-symbols-outlined text-base">delete</span>
-                                        Remove from My Drive
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
+                                <button
+                                  onClick={(e) => handleOpenShareDropdown(e, share)}
+                                  className={`p-1.5 rounded-lg transition-colors ${
+                                    activeDropdown?.share.id === share.id
+                                      ? 'text-[#0F172A] bg-[#F1F5F9]'
+                                      : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
+                                  }`}
+                                  title="More Options"
+                                >
+                                  <span className="material-symbols-outlined text-lg">more_vert</span>
+                                </button>
                               </>
                             )}
                           </div>
@@ -900,6 +918,42 @@ export default function SharedPage() {
           permission={previewFile.permission}
           onClose={() => setPreviewFile(null)}
         />
+      )}
+
+      {/* Floating Action Dropdown Menu */}
+      {activeDropdown && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setActiveDropdown(null)}
+          />
+          <div
+            className="fixed z-50 w-48 bg-white rounded-xl shadow-xl border border-[#E2E8F0] py-1.5 text-left animate-scale-in"
+            style={{ left: activeDropdown.x, top: activeDropdown.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setSelectedShare(activeDropdown.share);
+                setActiveDropdown(null);
+              }}
+              className="w-full px-3.5 py-2 text-xs text-[#0F172A] hover:bg-[#F8FAFC] flex items-center gap-2 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base text-[#64748B]">info</span>
+              Sharing Details
+            </button>
+            <button
+              onClick={() => {
+                handleDeleteShare(activeDropdown.share.id, false);
+                setActiveDropdown(null);
+              }}
+              className="w-full px-3.5 py-2 text-xs text-[#DC2626] hover:bg-[#FEE2E2] flex items-center gap-2 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">delete</span>
+              Remove from My Drive
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
