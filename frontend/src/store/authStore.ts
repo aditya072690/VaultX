@@ -56,6 +56,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: () => {
     localStorage.removeItem('vaultx_token');
     localStorage.removeItem('vaultx_user');
+    localStorage.removeItem('vaultx_vault_token');
     set({ user: null, token: null, isAuthenticated: false });
   },
 

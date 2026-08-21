@@ -33,7 +33,7 @@ export default function DashboardNavbar() {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    window.location.href = '/';
   };
 
   return (
